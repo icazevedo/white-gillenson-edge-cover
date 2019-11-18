@@ -1,10 +1,16 @@
 class Tree:
     def __init__(self, novo_id):
         self.id = novo_id
+        self.root = None
         self.E = []
         self.O = []
         self.U = []
-        
+
+    def setRoot(self, root):
+        root.label = 'E'
+        root.tree = self.id
+        self.root = root
+        self.E.append(root)
 
     def addToEven(self, v):
         v.tree = self.id
@@ -76,6 +82,7 @@ class Vertice:
         self.tree = -1
         self.label = 'U'
         self.weight = 0
+        self.parent = None
         self.blossomVertices = []
         self.Zp = 0
 
@@ -111,6 +118,16 @@ class Edge:
     def __repr__(self):
         return "Edge from " + str(self.v1.id) + " to " + str(self.v2.id) + ". Peso " + str(self.weight) + " e alfa " + str(self.alfa)
 
+class Delta:
+    def __init__(self, value, edge):
+        self.value = value
+        self.edge = edge
+
+    def compareAndSetDelta(self, value, edge):
+        if(value < self.value or self.value is None):
+            self.value = value
+            self.edge = edge
+
 def getEdgesWeight(E):
     weigths = []
 
@@ -128,104 +145,122 @@ def getVerticesZp(V):
     
     return Zps
 
-def delta2CalcList(E):
-    delta2CalcList = []
+# def delta2CalcList(E):
+#     delta2CalcList = []
 
-    for e in E:
-        if e.v1.tree != e.v2.tree:
-            delta2CalcList.append(e.delta2And4and6())
+#     for e in E:
+#         if e.v1.tree != e.v2.tree:
+#             delta2CalcList.append(e.delta2And4and6())
 
-    return delta2CalcList
+#     return delta2CalcList
 
-def delta3CalcList(E):
-    delta3CalcList = []
+# def delta3CalcList(E):
+#     delta3CalcList = []
 
-    for e in E:
-        if e.v1.tree != e.v2.tree:
-            delta3CalcList.append(e.alfa)
+#     for e in E:
+#         if e.v1.tree != e.v2.tree:
+#             delta3CalcList.append(e.alfa)
 
-    return delta3CalcList
+#     return delta3CalcList
 
-def notInCover(E, C):
-    notInCover = []
-    notInCover.extend(E)
+# def notInCover(E, C):
+#     notInCover = []
+#     notInCover.extend(E)
 
-    for e in C:
-        notInCover.remove(e)
+#     for e in C:
+#         notInCover.remove(e)
 
-    return notInCover
+#     return notInCover
 
-def delta4CalcList(E):
-    delta4CalcList = []
+# def delta4CalcList(E):
+#     delta4CalcList = []
 
-    for e in E:
-        if (e.v1.label == 'E' and e.v2.label == 'U') or e.v1.label == 'U' and e.v2.label == 'E':
-            delta4CalcList.append(e.delta2And4and6())
+#     for e in E:
+#         if (e.v1.label == 'E' and e.v2.label == 'U') or e.v1.label == 'U' and e.v2.label == 'E':
+#             delta4CalcList.append(e.delta2And4and6())
     
-    return delta4CalcList
+#     return delta4CalcList
 
 
-def delta5CalcList(E):
-    delta5CalcList = []
+# def delta5CalcList(E):
+#     delta5CalcList = []
 
-    for e in E:
-        if (e.v1.label == 'O' and e.v2.label == 'U') or (e.v1.label == 'U' and e.v2.label == 'O'):
-            delta5CalcList.append(e.alfa)
+#     for e in E:
+#         if (e.v1.label == 'O' and e.v2.label == 'U') or (e.v1.label == 'U' and e.v2.label == 'O'):
+#             delta5CalcList.append(e.alfa)
     
-    return delta5CalcList
+#     return delta5CalcList
 
-def delta6CalcList(E):
-    delta6CalcList = []
+# def delta6CalcList(E):
+#     delta6CalcList = []
 
-    for e in E:
-        if e.v1.tree == e.v2.tree and e.v1.label == 'E' and e.v2.label == 'E':
-            delta6CalcList.append(e.delta2And4and6())
+#     for e in E:
+#         if e.v1.tree == e.v2.tree and e.v1.label == 'E' and e.v2.label == 'E':
+#             delta6CalcList.append(e.delta2And4and6())
 
-    return delta6CalcList
+#     return delta6CalcList
 
-def delta7CalcList(E):
-    delta7CalcList = []
+# def delta7CalcList(E):
+#     delta7CalcList = []
 
-    for e in E:
-        if e.v1.tree == e.v2.tree and e.v1.label == 'O' and e.v2.label == 'O':
-            delta7CalcList.append(e)
+#     for e in E:
+#         if e.v1.tree == e.v2.tree and e.v1.label == 'O' and e.v2.label == 'O':
+#             delta7CalcList.append(e)
 
-    return delta7CalcList
+#     return delta7CalcList
+
+def pupulateForest(forest, cover_v, cover):
+    for i in range(0, len(cover)):
+        v_edges = cover[i]
+        edge_sum = 0
+
+        for j in range(0, len(v_edges)):
+            if v_edges[j] != 0:
+                edge_sum += 1
+
+                if edge_sum > 1:
+                    new_tree = forest.createNewTree()
+                    new_tree.setRoot(cover_v[i])
 
 def min_cover(adjacency_matrix):
-    V = []
-    E = []
+    original_V = []
+    original_E = []
 
     for i in range(0, len(adjacency_matrix)):
-        V.append(Vertice(i))
+        original_V.append(Vertice(i))
     
+    original_adjacency_matrix = []
+
     for i in range(0, len(adjacency_matrix)):
+        original_adjacency_matrix[i] = []
+
         for j in range (i, len(adjacency_matrix[i])):
-            if adjacency_matrix[i][j] > 0:
-                E.append(Edge(V[i], V[j], adjacency_matrix[i][j]))
+            new_edge = Edge(original_V[i], original_V[j], adjacency_matrix[i][j])
+
+            original_adjacency_matrix.append(new_edge)
+            original_E.append(new_edge)
     
-    for v in V:
-        print(v)
-    
-    for e in E:
-        print(e)
-    
+    cover = original_adjacency_matrix.copy()
+    cover_v = original_V.copy()
+
+    cover_x = []
+
+    for i in range(0, len(adjacency_matrix)):
+        cover_x[i] = []
+
+        for j in range (i, len(adjacency_matrix[i])):
+            if(adjacency_matrix[i][j] == 0):
+                cover_x[i][j] = 0
+            else:
+                cover_x[i][j] = 1
+
     Bp = []
     
-    C = E
-    lambd = max(getEdgesWeight(E))
+    lambd = max(getEdgesWeight(original_E))
     wi = lambd/2
 
     forest = Forest()
-
-    transmitterIndex = getTransmitter(adjacency_matrix)
-
-    for j in range(0, len(adjacency_matrix[transmitterIndex])):
-        edge = adjacency_matrix[transmitterIndex][j]
-
-        if edge != 0:
-            tree = forest.createNewTree()
-            tree.addToEven(V[j])
+    pupulateForest(forest, cover_v, cover)
 
     # for tree in forest.trees:
     #     print(tree.E)
@@ -233,126 +268,141 @@ def min_cover(adjacency_matrix):
     # for v in V:
     #     print(v)
 
+    deltas = []
+
+    for i in range(1, 7):
+        deltas[i] = Delta(None, None)
+
     # CALCULAR DELTA 1
+    # TODO AJEITAR DELTA 1 DEPOIS
     delta1 = 0
-    delta1Valido = True
+    delta1Valido = False
 
-    Zps = getVerticesZp(V)
-    
-    if len(Zps) > 0:
-        delta1 = min(Zps)/2
-    else:
-        delta1Valido = False
+    for B in Bp:
+        delta1 = 0
+        delta1Valido = True
 
-    # CALCULAR DELTA 2
-    delta2 = 0
-    delta2Valido = True
-
-    delta2CalcList = delta2CalcList(C)
-
-    if len(delta2CalcList) > 0:
-        delta2 = min(delta2CalcList)/2
-    else:
-        delta2Valido = False
-
-    # CALCULAR DELTA 3
-    delta3 = 0
-    delta3Valido = True
-
-    delta3CalcList = delta3CalcList(notInCover(E, C))
-
-    if len(delta3CalcList) > 0:
-        delta3 = min(delta3CalcList)/2
-    else:
-        delta3Valido = False
-
-
-    # CALCULAR DELTA 4
-    delta4 = 0
-    delta4Valido = True
-
-    delta4CalcList = delta4CalcList(C)
-
-    if len(delta4CalcList) > 0:
-        delta4 = min(delta4CalcList)/2
-    else:
-        delta4Valido = False
-
-    # CALCULAR DELTA 5
-    delta5 = 0
-    delta5Valido = True
-
-    delta5CalcList = delta5CalcList(notInCover(E, C))
-
-    if len(delta5CalcList) > 0:
-        delta5 = min(delta5CalcList)/2
-    else:
-        delta5Valido = False
-
-    # CALCULAR DELTA 6
-    delta6 = 0
-    delta6Valido = True
-
-    delta6CalcList = delta6CalcList(C)
-
-    if len(delta6CalcList) > 0:
-        delta6 = min(delta6CalcList)/2
-    else:
-        delta6Valido = False
-
-    # CALCULAR DELTA 7
-    delta7 = 0
-    delta7Valido = True
-
-    delta7CalcList = delta7CalcList(notInCover(E, C))
-
-    if len(delta7CalcList) > 0:
-        delta7 = min(delta7CalcList)/2
-    else:
-        delta7Valido = False
-
-    if not delta1Valido and not delta2Valido and not delta3Valido and not delta4Valido and not delta5Valido and not delta6Valido and not delta7Valido:
-        print("Found cover!")
-        print(C)
-    else:
-        validDeltaValues = []
-
-        if delta1Valido:
-            validDeltaValues.insert(1, delta1)
+        Zps = getVerticesZp(original_V)
         
-        if delta2Valido:
-            validDeltaValues.insert(2, delta2)
+        if len(Zps) > 0:
+            delta1 = min(Zps)/2
+            delta1Valido = True
+        else:
+            delta1Valido = False
 
-        if delta3Valido:
-            validDeltaValues.insert(3, delta3)
+    for i in range(0, len(original_adjacency_matrix)):
+        for j in range(0, len(original_adjacency_matrix[i])):
+            # SE A ARESTA ESTIVER NA COBERTURA
+            if cover_x[i][j] == 1:
+                if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'E' and cover_v[j].label == 'E':
+                    deltas[2].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
 
-        if delta4Valido:
-            validDeltaValues.insert(4, delta4)
+                if (cover_v[i].label == 'E' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'E'):
+                    deltas[4].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
 
-        if delta5Valido:
-            validDeltaValues.insert(5, delta5)
+                #TODO fazer verificação se i e j não estão no mesmo blossom
+                if(cover_v[i].label == 'E' and cover_v[j].label == 'E') and cover_v[i].tree == cover_v[j].tree:
+                    deltas[6].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
+            elif cover_x[i][j] == -1:
+                if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'O' and cover_v[j].label == 'O' and cover[i][j].alfa > 0:
+                    deltas[3].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
-        if delta6Valido:
-            validDeltaValues.insert(6, delta6)
+                if (cover_v[i].label == 'O' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'O') and cover[i][j].alfa > 0:
+                    deltas[5].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
-        if delta7Valido:
-            validDeltaValues.insert(7, delta7)
+                #TODO fazer verificação se i e j não estão no mesmo blossom
+                if(cover_v[i].label == 'O' and cover_v[j].label == 'O') and cover_v[i].tree == cover_v[j].tree:
+                    deltas[7].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
-        choosenDeltaValue = min(validDeltaValues)
-        choosenDelta = -1
+    for i in range(1, len(deltas)):
+        if (i != 4 and i != 5):
+            deltas[i].compareAndSetDelta(deltas[i].value/2, deltas[i].edge)
 
-        for validDeltaIndex in range(1, 8):
-            if validDeltaValues[validDeltaIndex] == choosenDeltaValue:
-                choosenDelta = validDeltaIndex
-                break
+    choosenDelta = None
+    choosenDeltaIndex = None
+    
+    for i in range(1, len(deltas)):
+        if not (deltas[i].value is None):
+            if(choosenDelta is None) or (deltas[i].value < choosenDelta.value):
+                choosenDelta = deltas[i]
+                choosenDeltaIndex = i
+    
+    
+    if choosenDelta is None:
+        print("Found cover!")
+        print(cover)
+    else:
+        if (choosenDeltaIndex == 2 or choosenDeltaIndex == 3):
+            #Aresta verificada agora
+            new_value = 0
+            
+            if(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == -1):
+                new_value = 1
+            elif(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == 1):
+                new_value = -1
 
+            cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = new_value
+            cover_x[choosenDelta.edge.v2.id][choosenDelta.edge.v1.id] = new_value
+
+            #v1
+            currentVertice = choosenDelta.edge.v1
+
+            while(not (currentVertice.parent is None)):
+                new_value = 0
+                
+                if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                    new_value = 1
+                elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                    new_value = -1
+                
+                cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+            
+                currentVertice = currentVertice.parent
+
+            #v2
+            currentVertice = choosenDelta.edge.v2
+
+            while(not (currentVertice.parent is None)):
+                new_value = 0
+                
+                if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                    new_value = 1
+                elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                    new_value = -1
+                
+                cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+            
+                currentVertice = currentVertice.parent
+            
+
+        if (choosenDeltaIndex == 4):
+            if choosenDelta.edge.v1.label == 'E':
+                choosenDelta.edge.v2.parent = choosenDelta.edge.v1
+                forest.trees[choosenDelta.edge.v1.tree].addToOdd(choosenDelta.edge.v2)
+            else:
+                choosenDelta.edge.v1.parent = choosenDelta.edge.v2
+                forest.trees[choosenDelta.edge.v2.tree].addToOdd(choosenDelta.edge.v1)
+
+            # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como odd
+        elif(choosenDeltaIndex == 5):
+            if choosenDelta.edge.v1.label == 'O':
+                choosenDelta.edge.v2.parent = choosenDelta.edge.v1
+                forest.trees[choosenDelta.edge.v1.tree].addToEven(choosenDelta.edge.v2)
+            else:
+                choosenDelta.edge.v1.parent = choosenDelta.edge.v2
+                forest.trees[choosenDelta.edge.v2.tree].addToEven(choosenDelta.edge.v1)
+
+            # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como even
+        
         for e in forest.getEven():
             e.weight = e.weight - choosenDeltaValue
 
         for e in forest.getOdd():
             e.weight = e.weight + choosenDeltaValue
 
-        for v in V:
+        for v in original_V:
             if v.isBlossom():
                 if v.label == 'E':
                     v.Zp = v.Zp - (2 * choosenDeltaValue)
