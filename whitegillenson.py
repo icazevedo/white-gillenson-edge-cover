@@ -38,6 +38,17 @@ class Forest:
     def addToTrees(self, tree):
         self.trees.append(tree)
 
+    def removeTree(self, tree_id):
+        for v in self.trees[tree_id].vertices:
+            v.label = 'U'
+            v.tree = -1
+
+        self.trees.pop(tree_id)
+
+        for i in range(0, len(self.trees)):
+            for v in self.trees[i].vertices:
+                v.tree = i
+
 def getTransmitter(adjacency_matrix):
     for i in range(0, len(adjacency_matrix)):
         v = adjacency_matrix[i]
@@ -193,77 +204,26 @@ def getVerticesZp(V):
 
 #     return delta7CalcList
 
-def pupulateForest(forest, cover_v, cover):
+def populateForest(forest, cover_v, cover, cover_x):
     for i in range(0, len(cover)):
         v_edges = cover[i]
         edge_sum = 0
 
-        if(cover_v[i].label == 'U' and cover_v[i].tree = -1):
+        if(cover_v[i].label == 'U' and cover_v[i].tree == -1):
             for j in range(0, len(v_edges)):
-                if (not (v_edges[j] is None)):
+                if (not (v_edges[j] is None)) and cover_x[i][j] == 1:
                     edge_sum += 1
 
                     if edge_sum > 1:
                         new_tree = forest.createNewTree()
                         new_tree.setRoot(cover_v[i])
 
-def min_cover(adjacency_matrix):
-    original_V = []
-    original_E = []
+def passo2(forest, cover_v, cover_x, cover, Bp, lambd):
+    populateForest(forest, cover_v, cover, cover_x)
 
-    for i in range(0, len(adjacency_matrix)):
-        original_V.append(Vertice(i))
-    
-    original_adjacency_matrix = []
+    passo3(forest, cover_v, cover_x, cover, Bp, lambd)
 
-    for i in range(0, len(adjacency_matrix)):
-        original_adjacency_matrix.append([])
-
-        for j in range (i, len(adjacency_matrix[i])):
-            if adjacency_matrix[i][j] != 0:
-                new_edge = Edge(original_V[i], original_V[j], adjacency_matrix[i][j])
-
-                original_adjacency_matrix[i].append(new_edge)
-                original_E.append(new_edge)
-            else:
-                original_adjacency_matrix[i].append(None)
-    
-    cover = original_adjacency_matrix.copy()
-    cover_v = original_V.copy()
-
-    cover_x = []
-
-    for i in range(0, len(adjacency_matrix)):
-        cover_x.append([])
-
-        for j in range (i, len(adjacency_matrix[i])):
-            if(adjacency_matrix[i][j] == 0):
-                cover_x[i].append(0)
-            else:
-                cover_x[i].append(1)
-
-    Bp = []
-    
-    lambd = max(getEdgesWeight(original_E))
-    wi = lambd/2
-
-    for i in range(0, len(cover)):
-        cover_v[i].weight = lambd/2
-
-        for j in range(0, len(cover[i])):
-            if(not (cover[i][j] is None)):
-                cover[i][j].alfa = 0
-
-    #FAZER PASSO 2
-    forest = Forest()
-    pupulateForest(forest, cover_v, cover)
-
-    # for tree in forest.trees:
-    #     print(tree.E)
-
-    # for v in V:
-    #     print(v)
-    def passo3(forest, cover_v, cover_x, cover):
+def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
         deltas = [None]
 
         for i in range(0, 7):
@@ -273,10 +233,10 @@ def min_cover(adjacency_matrix):
         for B in Bp:
             deltas[1].compareAndSetDelta1(B.Zp, B)
 
-        for i in range(0, len(original_adjacency_matrix)):
-            for j in range(0, len(original_adjacency_matrix[i])):
+        for i in range(0, len(cover)):
+            for j in range(0, len(cover[i])):
                 # SE A ARESTA ESTIVER NA COBERTURA
-                if cover_x[i][j] == 1:
+                if (not(cover[i][j] is None)) and cover_x[i][j] == 1:
                     if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'E' and cover_v[j].label == 'E':
                         deltas[2].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
 
@@ -293,7 +253,7 @@ def min_cover(adjacency_matrix):
                         
                         if notInSameBlossom:
                             deltas[6].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
-                elif cover_x[i][j] == -1:
+                elif (not(cover[i][j] is None)) and cover_x[i][j] == -1:
                     if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'O' and cover_v[j].label == 'O' and cover[i][j].alfa > 0:
                         deltas[3].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
@@ -491,38 +451,44 @@ def min_cover(adjacency_matrix):
                 #     cover_x[currentVertice.parent.id][currentVertice.id] = new_value
                 
                 #     currentVertice = currentVertice.parent
+                v1_original_tree = choosenDelta.edge.v1.tree
+                v2_original_tree = choosenDelta.edge.v2.tree
 
-                for v in choosenDelta.edge.v1.tree.vertices:
+                for v in forest.trees[choosenDelta.edge.v1.tree].vertices:
                     v.label = 'U'
                     v.tree = -1
 
-                    if v.id != choosenDelta.edge.v1.tree.root.id:
+                    if (not (v.parent is None)):
                         new_value = 0
                         
-                        if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                        if(cover_x[v.id][v.parent.id] == -1):
                             new_value = 1
-                        elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                        elif(cover_x[v.id][v.parent.id] == 1):
                             new_value = -1
                         
-                        cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                        cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                        cover_x[v.id][v.parent.id] = new_value
+                        cover_x[v.parent.id][v.id] = new_value
                 
 
-                for v in choosenDelta.edge.v2.tree.vertices:
+                for v in forest.trees[choosenDelta.edge.v2.tree].vertices:
                     v.label = 'U'
                     v.tree = -1
                     
-                    if v.id != choosenDelta.edge.v2.tree.root.id:
+                    if (not (v.parent is None)):
                         new_value = 0
                         
-                        if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                        if(cover_x[v.id][v.parent.id] == -1):
                             new_value = 1
-                        elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                        elif(cover_x[v.id][v.parent.id] == 1):
                             new_value = -1
                         
-                        cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                        cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                        cover_x[v.id][v.parent.id] = new_value
+                        cover_x[v.parent.id][v.id] = new_value
 
+                forest.removeTree(v1_original_tree)
+                forest.removeTree(v2_original_tree)
+
+                passo2(forest, cover_v, cover_x, cover, Bp, lambd)
             elif (choosenDeltaIndex == 4):
                 if choosenDelta.edge.v1.label == 'E':
                     choosenDelta.edge.v2.parent = choosenDelta.edge.v1
@@ -636,36 +602,41 @@ def min_cover(adjacency_matrix):
                     
                     #     currentVertice = currentVertice.parent
 
-                    for v in choosenDelta.edge.v1.tree.vertices:
+                    for v in forest.trees[choosenDelta.edge.v1.tree].vertices:
                         v.label = 'U'
                         v.tree = -1
 
-                        if v.id != choosenDelta.edge.v1.tree.root.id:
+                        if (not (v.parent is None)):
                             new_value = 0
                             
-                            if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                            if(cover_x[v.id][v.parent.id] == -1):
                                 new_value = 1
-                            elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                            elif(cover_x[v.id][v.parent.id] == 1):
                                 new_value = -1
                             
-                            cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                            cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                            cover_x[v.id][v.parent.id] = new_value
+                            cover_x[v.parent.id][v.id] = new_value
                     
 
-                    for v in choosenDelta.edge.v2.tree.vertices:
+                    for v in forest.trees[choosenDelta.edge.v2.tree].vertices:
                         v.label = 'U'
                         v.tree = -1
                         
-                        if v.id != choosenDelta.edge.v2.tree.root.id:
+                        if (not (v.parent is None)):
                             new_value = 0
                             
-                            if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                            if(cover_x[v.id][v.parent.id] == -1):
                                 new_value = 1
-                            elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                            elif(cover_x[v.id][v.parent.id] == 1):
                                 new_value = -1
                             
-                            cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                            cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                            cover_x[v.id][v.parent.id] = new_value
+                            cover_x[v.parent.id][v.id] = new_value
+
+                    forest.removeTree(choosenDelta.edge.v1.tree)
+                    forest.removeTree(choosenDelta.edge.v2.tree)
+
+                    passo2(forest, cover_v, cover_x, cover, Bp, lambd)
                 else:
                     #Instanciação do pseudo-vertice que representa o blossom
                     blossom_vertice = Vertice(len(cover[i]))
@@ -759,15 +730,65 @@ def min_cover(adjacency_matrix):
 
                     Bp.append(blossom_vertice)
 
+def min_cover(adjacency_matrix):
+    original_V = []
+    original_E = []
+
+    for i in range(0, len(adjacency_matrix)):
+        original_V.append(Vertice(i))
+    
+    original_adjacency_matrix = []
+
+    for i in range(0, len(adjacency_matrix)):
+        original_adjacency_matrix.append([])
+
+        for j in range (0, len(adjacency_matrix[i])):
+            if adjacency_matrix[i][j] != 0:
+                new_edge = Edge(original_V[i], original_V[j], adjacency_matrix[i][j])
+
+                original_adjacency_matrix[i].append(new_edge)
+                original_E.append(new_edge)
+            else:
+                original_adjacency_matrix[i].append(None)
+    
+    cover = original_adjacency_matrix.copy()
+    cover_v = original_V.copy()
+
+    cover_x = []
+
+    for i in range(0, len(adjacency_matrix)):
+        cover_x.append([])
+
+        for j in range (0, len(adjacency_matrix[i])):
+            if(adjacency_matrix[i][j] == 0):
+                cover_x[i].append(0)
+            else:
+                cover_x[i].append(1)
+
+    Bp = []
+    
+    lambd = max(getEdgesWeight(original_E))
+    wi = lambd/2
+
+    for i in range(0, len(cover)):
+        cover_v[i].weight = lambd/2
+
+        for j in range(0, len(cover[i])):
+            if(not (cover[i][j] is None)):
+                cover[i][j].alfa = 0
+
+    #FAZER PASSO 2
+    forest = Forest()
+    passo2(forest, cover_v, cover_x, cover, Bp, lambd)
 
 
 ma = [
     [0, 20, 0, 0, 10, 0],
-    [1, 0, 5, 0, 2, 0],
-    [0, 1, 0, 5, 0, 0],
-    [0, 0, 1, 0, 4, 2],
-    [1, 1, 0, 1, 0, 0],
-    [0, 0, 0, 1, 0, 0]
+    [20, 0, 5, 0, 2, 0],
+    [0, 5, 0, 5, 0, 0],
+    [0, 0, 5, 0, 4, 2],
+    [10, 2, 0, 4, 0, 0],
+    [0, 0, 0, 2, 0, 0]
 ]
 
 min_cover(ma)
