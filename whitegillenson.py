@@ -550,6 +550,17 @@ def min_cover(adjacency_matrix):
 
                 blossom_vertices = edge_tree.vertices
 
+                v1_path = []
+                v2_path = []
+
+                currentV1 = choosenDelta.v1
+                currentV2 = choosenDelta.v2
+                
+                while(not (currentV1.parent is None)):
+                    while(not (currentV2,parent is None)):
+                        if currentV1.parent.id == currentV2.parent.id:
+                            currentV2 = currentV2.parent
+
                 blossom_vertices_id = []
 
                 #Muda o rótulo de todos os vértices que compõem o blossom
