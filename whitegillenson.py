@@ -2,30 +2,28 @@ class Tree:
     def __init__(self, novo_id):
         self.id = novo_id
         self.root = None
-        self.E = []
-        self.O = []
-        self.U = []
+        self.vertices = []
 
     def setRoot(self, root):
         root.label = 'E'
         root.tree = self.id
         self.root = root
-        self.E.append(root)
+        self.vertices.append(root)
 
     def addToEven(self, v):
         v.tree = self.id
         v.label = 'E'
-        self.E.append(v)
+        self.vertices.append(v)
 
     def addToOdd(self, v):
         v.tree = self.id
         v.label = 'O'
-        self.O.append(v)
+        self.vertices.append(v)
 
     def addToUnlabeled(self, v):
         v.tree = self.id
         v.label = 'U'
-        self.U.append(v)
+        self.vertices.append(v)
 
 class Forest:
     def __init__(self):
@@ -39,30 +37,6 @@ class Forest:
 
     def addToTrees(self, tree):
         self.trees.append(tree)
-
-    def getEven(self):
-        E = []
-
-        for tree in self.trees:
-            E.extend(tree.E)
-        
-        return E
-
-    def getOdd(self):
-        O = []
-
-        for tree in self.trees:
-            O.extend(tree.O)
-        
-        return O
-
-    def getUnlabeled(self):
-        U = []
-
-        for tree in self.trees:
-            U.extend(tree.U)
-        
-        return U
 
 def getTransmitter(adjacency_matrix):
     for i in range(0, len(adjacency_matrix)):
@@ -83,11 +57,13 @@ class Vertice:
         self.label = 'U'
         self.weight = 0
         self.parent = None
-        self.blossomVertices = []
+        self.children = []
+        self.blossomEdges = []
+        self.blossomVerticesId = []
         self.Zp = 0
 
     def isBlossom(self):
-        return len(self.blossomVertices) > 0
+        return len(self.blossomEdges) > 0
 
     def __str__(self):
         return str(self.id) + " - " + str(self.tree) + " - " + str(self.weight)
@@ -102,6 +78,7 @@ class Edge:
         self.weight = weight
         self.alfa = 0
         self.x = 0
+        self.originalEdge = None
     
     def getId(self):
         return (self.v1.id, self.v2.id)
@@ -122,11 +99,17 @@ class Delta:
     def __init__(self, value, edge):
         self.value = value
         self.edge = edge
+        self.blossom = None
 
     def compareAndSetDelta(self, value, edge):
         if(value < self.value or self.value is None):
             self.value = value
             self.edge = edge
+
+    def compareAndSetDelta1(self, value, blossom):
+        if(value < self.value or self.value is None):
+            self.value = value
+            self.blossom = blossom
 
 def getEdgesWeight(E):
     weigths = []
@@ -235,10 +218,13 @@ def min_cover(adjacency_matrix):
         original_adjacency_matrix[i] = []
 
         for j in range (i, len(adjacency_matrix[i])):
-            new_edge = Edge(original_V[i], original_V[j], adjacency_matrix[i][j])
+            if adjacency_matrix[i][j] != 0:
+                new_edge = Edge(original_V[i], original_V[j], adjacency_matrix[i][j])
 
-            original_adjacency_matrix.append(new_edge)
-            original_E.append(new_edge)
+                original_adjacency_matrix.append(new_edge)
+                original_E.append(new_edge)
+            else:
+                original_adjacency_matrix.append(None)
     
     cover = original_adjacency_matrix.copy()
     cover_v = original_V.copy()
@@ -273,22 +259,9 @@ def min_cover(adjacency_matrix):
     for i in range(1, 7):
         deltas[i] = Delta(None, None)
 
-    # CALCULAR DELTA 1
-    # TODO AJEITAR DELTA 1 DEPOIS
-    delta1 = 0
-    delta1Valido = False
-
+    #Calculando Delta 1
     for B in Bp:
-        delta1 = 0
-        delta1Valido = True
-
-        Zps = getVerticesZp(original_V)
-        
-        if len(Zps) > 0:
-            delta1 = min(Zps)/2
-            delta1Valido = True
-        else:
-            delta1Valido = False
+        deltas[1].compareAndSetDelta1(B.Zp, B)
 
     for i in range(0, len(original_adjacency_matrix)):
         for j in range(0, len(original_adjacency_matrix[i])):
@@ -332,6 +305,21 @@ def min_cover(adjacency_matrix):
         print("Found cover!")
         print(cover)
     else:
+        if (choosenDeltaIndex == 1):
+            blossom_tree = forest.trees[choosenDelta.blossom.tree]
+
+            for i in blossom_tree.vertices:
+                if(not (cover[i][choosenDelta.blossom.id] is None)):
+                    originalEdgeTuple = cover[i][choosenDelta.blossom.id]
+                    originalEdge = cover[originalEdgeTuple[0]][originalEdgeTuple[1]]
+
+                    novo_vertice = cover_v[originalEdgeTuple[1]]
+                    
+                    if(novo_vertice )
+
+            
+                # if (choosenDelta.blossom.blossomVerticesId.count() > 1):
+
         if (choosenDeltaIndex == 2 or choosenDeltaIndex == 3):
             #Aresta verificada agora
             new_value = 0
@@ -377,25 +365,171 @@ def min_cover(adjacency_matrix):
                 currentVertice = currentVertice.parent
             
 
-        if (choosenDeltaIndex == 4):
+        elif (choosenDeltaIndex == 4):
             if choosenDelta.edge.v1.label == 'E':
                 choosenDelta.edge.v2.parent = choosenDelta.edge.v1
+                choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
                 forest.trees[choosenDelta.edge.v1.tree].addToOdd(choosenDelta.edge.v2)
             else:
                 choosenDelta.edge.v1.parent = choosenDelta.edge.v2
+                choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
                 forest.trees[choosenDelta.edge.v2.tree].addToOdd(choosenDelta.edge.v1)
 
             # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como odd
         elif(choosenDeltaIndex == 5):
             if choosenDelta.edge.v1.label == 'O':
                 choosenDelta.edge.v2.parent = choosenDelta.edge.v1
+                choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
                 forest.trees[choosenDelta.edge.v1.tree].addToEven(choosenDelta.edge.v2)
             else:
                 choosenDelta.edge.v1.parent = choosenDelta.edge.v2
+                choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
                 forest.trees[choosenDelta.edge.v2.tree].addToEven(choosenDelta.edge.v1)
 
             # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como even
-        
+        elif(choosenDeltaIndex == 6 or choosenDeltaIndex == 7):
+            edge_tree = forest.trees[choosenDelta.edge.v1.tree]
+            root_of_tree = edge_tree.root
+
+            root_degree = 0
+
+            for edge_x in cover_x[root_of_tree.id]:
+                if edge_x == 1:
+                    root_degree += 1
+            
+            isTypeOneBlossomCheck1 = False
+            isTypeOneBlossomCheck2 = False
+
+            if(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == 1):
+                currentVertice = choosenDelta.edge.v1
+                while(not (currentVertice.parent is None)):
+                    if(currentVertice.parent.parent is None):
+                        isTypeOneBlossomCheck1 = cover_x[currentVertice.parent.id][currentVertice.parent.parent.id] == 1
+                        break
+
+                    else:
+                        currentVertice = currentVertice.parent
+
+
+                if (isTypeOneBlossomCheck1):
+                    currentVertice = choosenDelta.edge.v2
+                    while(not (currentVertice.parent is None)):
+                        if(currentVertice.parent.parent is None):
+                            isTypeOneBlossomCheck2 = cover_x[currentVertice.parent.id][currentVertice.parent.parent.id] == 1
+                            break
+
+                        else:
+                            currentVertice = currentVertice.parent
+
+            if root_degree > 2 and isTypeOneBlossomCheck1 and isTypeOneBlossomCheck2:
+                #Aresta verificada agora
+                new_value = 0
+                
+                if(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == -1):
+                    new_value = 1
+                elif(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == 1):
+                    new_value = -1
+
+                cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = new_value
+                cover_x[choosenDelta.edge.v2.id][choosenDelta.edge.v1.id] = new_value
+
+                #v1
+                currentVertice = choosenDelta.edge.v1
+
+                while(not (currentVertice.parent is None)):
+                    new_value = 0
+                    
+                    if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                        new_value = 1
+                    elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                        new_value = -1
+                    
+                    cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                    cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                
+                    currentVertice = currentVertice.parent
+
+                #v2
+                currentVertice = choosenDelta.edge.v2
+
+                while(not (currentVertice.parent is None)):
+                    new_value = 0
+                    
+                    if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                        new_value = 1
+                    elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                        new_value = -1
+                    
+                    cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                    cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                
+                    currentVertice = currentVertice.parent
+            else:
+                #Instanciação do pseudo-vertice que representa o blossom
+                blossom_vertice = Vertice(len(cover[i]))
+
+                blossom_vertices = edge_tree.vertices
+
+                blossom_vertices_id = []
+
+                #Muda o rótulo de todos os vértices que compõem o blossom
+                for bv in blossom_vertices:
+                    bv.label = 'O'
+                    blossom_vertices_id.append(bv.id)
+
+                blossom_vertice.blossomVerticesId = blossom_vertices_id
+
+                #Cria novo vertice na cobertura (matriz de adjacencia)
+                cover.append([])
+                cover_x.append([])
+                
+                for i in range(0, len(cover) - 1):
+                    #Variavel que indica se uma relação do vertice i foi encontrada com algum vértice j que está no blossom
+                    found = False
+
+                    #Se o vertice não está no blossom
+                    if blossom_vertices_id.count(i) == 0:
+                        for j in range(0, len(cover[i])):
+                            #Considera onde tem aresta e se o j está no blossom - ou seja, é uma aresta que se conecta ao pseudo-vertice
+                            if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
+                                new_blossom_relation = Edge(blossom_vertice, cover_v[i], cover[i][j].weight)
+                                new_blossom_relation.originalEdge = (i, j)
+
+                                #Define a relação do lado do pseudo-vertice
+                                cover[len(cover) - 1].append(new_blossom_relation)
+                                cover_x[len(cover) - 1].append(cover_x[i][j])
+
+                                #Define a relação do lado do vertice já existente
+                                cover[i].append(new_blossom_relation)
+                                cover_x[i].append(cover_x[i][j])
+
+                                #Encerra a execução para o vértice
+                                found = True
+                                break
+                    else:
+                        #Se o vértice i estiver no blossom
+                        for j in range(0, len(cover[i])):
+
+                            #Verifica se o vértice j está no blossom, se sim, adiciona a aresta entre eles ao pseudo-vertice
+                            if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
+                                blossom_vertice.blossomEdges.append(cover[i][j])
+                    
+                    #Se não foi encontrada uma aresta que conecta o vertice i ao blossom, é criada uma relação nula que representa a ausencia de relação
+                    if not found:
+                        #Criando relação nula do lado do pseudo-vertice
+                        cover[len(cover) - 1].append(None)
+                        cover_x[len(cover) - 1].append(0)
+
+                        #Criando relação nula do lado do vértice existente
+                        cover[i].append(None)
+                        cover_x[i].append(0)
+
+                cover[len(cover) - 1].append(None)
+                cover_x[len(cover) - 1].append(0)
+
+                Bp.append(blossom_vertice)
+
+
         for e in forest.getEven():
             e.weight = e.weight - choosenDeltaValue
 
@@ -413,7 +547,7 @@ def min_cover(adjacency_matrix):
             isInSameBlossom = False
 
             for b in Bp:
-                if b.blossomVertices.index(e.v1) != -1 and b.blossomVertices.index(e.v2) != -1:
+                if b.blossomEdges.index(e.v1) != -1 and b.blossomEdges.index(e.v2) != -1:
                     isInSameBlossom = True
                     break
             
