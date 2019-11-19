@@ -604,37 +604,68 @@ def min_cover(adjacency_matrix):
                     cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = new_value
                     cover_x[choosenDelta.edge.v2.id][choosenDelta.edge.v1.id] = new_value
 
-                    #v1
-                    currentVertice = choosenDelta.edge.v1
+                    # #v1
+                    # currentVertice = choosenDelta.edge.v1
 
-                    while(not (currentVertice.parent is None)):
-                        new_value = 0
+                    # while(not (currentVertice.parent is None)):
+                    #     new_value = 0
                         
-                        if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
-                            new_value = 1
-                        elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
-                            new_value = -1
+                    #     if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                    #         new_value = 1
+                    #     elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                    #         new_value = -1
                         
-                        cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                        cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                    #     cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                    #     cover_x[currentVertice.parent.id][currentVertice.id] = new_value
                     
-                        currentVertice = currentVertice.parent
+                    #     currentVertice = currentVertice.parent
 
-                    #v2
-                    currentVertice = choosenDelta.edge.v2
+                    # #v2
+                    # currentVertice = choosenDelta.edge.v2
 
-                    while(not (currentVertice.parent is None)):
-                        new_value = 0
+                    # while(not (currentVertice.parent is None)):
+                    #     new_value = 0
                         
-                        if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
-                            new_value = 1
-                        elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
-                            new_value = -1
+                    #     if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                    #         new_value = 1
+                    #     elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                    #         new_value = -1
                         
-                        cover_x[currentVertice.id][currentVertice.parent.id] = new_value
-                        cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                    #     cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                    #     cover_x[currentVertice.parent.id][currentVertice.id] = new_value
                     
-                        currentVertice = currentVertice.parent
+                    #     currentVertice = currentVertice.parent
+
+                    for v in choosenDelta.edge.v1.tree.vertices:
+                        v.label = 'U'
+                        v.tree = -1
+
+                        if v.id != choosenDelta.edge.v1.tree.root.id:
+                            new_value = 0
+                            
+                            if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                                new_value = 1
+                            elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                                new_value = -1
+                            
+                            cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                            cover_x[currentVertice.parent.id][currentVertice.id] = new_value
+                    
+
+                    for v in choosenDelta.edge.v2.tree.vertices:
+                        v.label = 'U'
+                        v.tree = -1
+                        
+                        if v.id != choosenDelta.edge.v2.tree.root.id:
+                            new_value = 0
+                            
+                            if(cover_x[currentVertice.id][currentVertice.parent.id] == -1):
+                                new_value = 1
+                            elif(cover_x[currentVertice.id][currentVertice.parent.id] == 1):
+                                new_value = -1
+                            
+                            cover_x[currentVertice.id][currentVertice.parent.id] = new_value
+                            cover_x[currentVertice.parent.id][currentVertice.id] = new_value
                 else:
                     #Instanciação do pseudo-vertice que representa o blossom
                     blossom_vertice = Vertice(len(cover[i]))
