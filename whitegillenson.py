@@ -60,6 +60,7 @@ class Vertice:
         self.children = []
         self.blossomEdges = []
         self.blossomVerticesId = []
+        self.distinguishedVertex = []
         self.Zp = 0
 
     def isBlossom(self):
@@ -450,23 +451,36 @@ def min_cover(adjacency_matrix):
                 choosenDelta.edge.v2.parent = choosenDelta.edge.v1
                 choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
                 forest.trees[choosenDelta.edge.v1.tree].addToOdd(choosenDelta.edge.v2)
+
+                if(choosenDelta.edge.v2.isBlossom()):
+                    for i in choosenDelta.edge.v2.blossomVerticesIds:
+                        cover_v[i].label = 'O'
             else:
                 choosenDelta.edge.v1.parent = choosenDelta.edge.v2
                 choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
                 forest.trees[choosenDelta.edge.v2.tree].addToOdd(choosenDelta.edge.v1)
 
-            # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como odd
+                if(choosenDelta.edge.v1.isBlossom()):
+                    for i in choosenDelta.edge.v1.blossomVerticesIds:
+                        cover_v[i].label = 'O'
         elif(choosenDeltaIndex == 5):
             if choosenDelta.edge.v1.label == 'O':
                 choosenDelta.edge.v2.parent = choosenDelta.edge.v1
                 choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
                 forest.trees[choosenDelta.edge.v1.tree].addToEven(choosenDelta.edge.v2)
+
+                if(choosenDelta.edge.v2.isBlossom()):
+                    for i in choosenDelta.edge.v2.blossomVerticesIds:
+                        cover_v[i].label = 'E'
             else:
                 choosenDelta.edge.v1.parent = choosenDelta.edge.v2
                 choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
                 forest.trees[choosenDelta.edge.v2.tree].addToEven(choosenDelta.edge.v1)
 
-            # TODO fazer o caso em que o vertice não rotulado é blossom - rotular todos os vertices do blossom como even
+                if(choosenDelta.edge.v1.isBlossom()):
+                    for i in choosenDelta.edge.v1.blossomVerticesIds:
+                        cover_v[i].label = 'E'
+
         elif(choosenDeltaIndex == 6 or choosenDeltaIndex == 7):
             edge_tree = forest.trees[choosenDelta.edge.v1.tree]
             root_of_tree = edge_tree.root
@@ -548,25 +562,42 @@ def min_cover(adjacency_matrix):
                 #Instanciação do pseudo-vertice que representa o blossom
                 blossom_vertice = Vertice(len(cover[i]))
 
-                blossom_vertices = edge_tree.vertices
-
                 v1_path = []
                 v2_path = []
 
                 currentV1 = choosenDelta.v1
                 currentV2 = choosenDelta.v2
                 
-                while(not (currentV1.parent is None)):
-                    while(not (currentV2,parent is None)):
-                        if currentV1.parent.id == currentV2.parent.id:
-                            currentV2 = currentV2.parent
+                foundDistinguishedVertex = False
+                distinguishedVertex = None
 
-                blossom_vertices_id = []
+                #encontra circuito do blossom
+                while(not (currentV1.parent is None)):
+                    if foundDistinguishedVertex:
+                        break
+
+                    if(not foundDistinguishedVertex):
+                        v1_path.append(currentV1.id)
+                        v2_path = []
+                        currentV2 = choosenDelta.v2
+                        while(not (currentV2.parent is None)):
+                            v2_path.append(currentV2.id)
+
+                            if currentV1.parent.id == currentV2.parent.id:
+                                foundDistinguishedVertex = True
+                                distinguishedVertex = currentV1.parent
+                                break
+
+                            currentV2 = currentV2.parent
+                        
+                        currentV1 = currentV1.parent
+
+
+                blossom_vertices_id = [].append(distinguishedVertex.id).extend(v1_path).extend(v2_path)
 
                 #Muda o rótulo de todos os vértices que compõem o blossom
-                for bv in blossom_vertices:
-                    bv.label = 'O'
-                    blossom_vertices_id.append(bv.id)
+                for bv in blossom_vertices_id:
+                    cover_v[bv].label = 'O'
 
                 blossom_vertice.blossomVerticesId = blossom_vertices_id
 
