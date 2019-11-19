@@ -46,6 +46,8 @@ class Forest:
         self.trees.pop(tree_id)
 
         for i in range(0, len(self.trees)):
+            self.trees[i].id = i
+
             for v in self.trees[i].vertices:
                 v.tree = i
 
@@ -114,12 +116,12 @@ class Delta:
         self.blossom = None
 
     def compareAndSetDelta(self, value, edge):
-        if(self.value is None or value < self.value):
+        if(self.value is None or (value < self.value and value >= 0)):
             self.value = value
             self.edge = edge
 
     def compareAndSetDelta1(self, value, blossom):
-        if(self.value is None or value < self.value):
+        if(self.value is None or  (value < self.value and value >= 0)):
             self.value = value
             self.blossom = blossom
 
@@ -217,6 +219,7 @@ def populateForest(forest, cover_v, cover, cover_x):
                     if edge_sum > 1:
                         new_tree = forest.createNewTree()
                         new_tree.setRoot(cover_v[i])
+                        break
 
 def passo2(forest, cover_v, cover_x, cover, Bp, lambd):
     populateForest(forest, cover_v, cover, cover_x)
@@ -231,7 +234,8 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
 
         #Calculando Delta 1
         for B in Bp:
-            deltas[1].compareAndSetDelta1(B.Zp, B)
+            if B.label == 'E':
+                deltas[1].compareAndSetDelta1(B.Zp, B)
 
         for i in range(0, len(cover)):
             for j in range(0, len(cover[i])):
@@ -368,6 +372,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                 choosenDelta.blossom.label = 'U'
                 
                 reconsctructTree(blossom_tree, blossom_tree.root.id, -1)
+                passo3(forest, cover_v, cover_x, cover, Bp, lambd)
                 # new_alternating_tree = Tree(choosenDelta.blossom.tree)
                 # new_alternating_tree.setRoot(blossom_tree.root)
 
@@ -490,6 +495,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
 
                 passo2(forest, cover_v, cover_x, cover, Bp, lambd)
             elif (choosenDeltaIndex == 4):
+                #v1 está na arvore
                 if choosenDelta.edge.v1.label == 'E':
                     choosenDelta.edge.v2.parent = choosenDelta.edge.v1
                     choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
@@ -498,6 +504,8 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     if(choosenDelta.edge.v2.isBlossom()):
                         for i in choosenDelta.edge.v2.blossomVerticesIds:
                             cover_v[i].label = 'O'
+
+                #v2 é que está na árvore
                 else:
                     choosenDelta.edge.v1.parent = choosenDelta.edge.v2
                     choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
@@ -506,7 +514,14 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     if(choosenDelta.edge.v1.isBlossom()):
                         for i in choosenDelta.edge.v1.blossomVerticesIds:
                             cover_v[i].label = 'O'
+                
+
+                cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = 1
+                cover_x[choosenDelta.edge.v2.id][choosenDelta.edge.v1.id] = 1
+
+                passo3(forest, cover_v, cover_x, cover, Bp, lambd)
             elif(choosenDeltaIndex == 5):
+                #v1 está na arvore
                 if choosenDelta.edge.v1.label == 'O':
                     choosenDelta.edge.v2.parent = choosenDelta.edge.v1
                     choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
@@ -515,6 +530,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     if(choosenDelta.edge.v2.isBlossom()):
                         for i in choosenDelta.edge.v2.blossomVerticesIds:
                             cover_v[i].label = 'E'
+                #v2 está na arvore
                 else:
                     choosenDelta.edge.v1.parent = choosenDelta.edge.v2
                     choosenDelta.edge.v2.children.append(choosenDelta.edge.v1)
@@ -524,6 +540,10 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                         for i in choosenDelta.edge.v1.blossomVerticesIds:
                             cover_v[i].label = 'E'
 
+                cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = -1
+                cover_x[choosenDelta.edge.v2.id][choosenDelta.edge.v1.id] = -1
+                
+                passo3(forest, cover_v, cover_x, cover, Bp, lambd)
             elif(choosenDeltaIndex == 6 or choosenDeltaIndex == 7):
                 edge_tree = forest.trees[choosenDelta.edge.v1.tree]
                 root_of_tree = edge_tree.root
@@ -534,31 +554,42 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     if edge_x == 1:
                         root_degree += 1
                 
-                isTypeOneBlossomCheck1 = False
-                isTypeOneBlossomCheck2 = False
+                isTypeOneBlossomCheck = False
 
-                if(cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] == 1):
-                    currentVertice = choosenDelta.edge.v1
-                    while(not (currentVertice.parent is None)):
-                        if(currentVertice.parent.parent is None):
-                            isTypeOneBlossomCheck1 = cover_x[currentVertice.parent.id][currentVertice.parent.parent.id] == 1
-                            break
+                v1_path = []
+                v2_path = []
 
-                        else:
-                            currentVertice = currentVertice.parent
+                currentV1 = choosenDelta.edge.v1
+                currentV2 = choosenDelta.edge.v2
+                
+                foundDistinguishedVertex = False
+                distinguishedVertex = None
 
+                #encontra circuito do blossom
+                while(not (currentV1 is None)):
+                    if foundDistinguishedVertex:
+                        break
 
-                    if (isTypeOneBlossomCheck1):
-                        currentVertice = choosenDelta.edge.v2
-                        while(not (currentVertice.parent is None)):
-                            if(currentVertice.parent.parent is None):
-                                isTypeOneBlossomCheck2 = cover_x[currentVertice.parent.id][currentVertice.parent.parent.id] == 1
+                    if(not foundDistinguishedVertex):
+                        v2_path = []
+                        currentV2 = choosenDelta.edge.v2
+                        while(not (currentV2 is None)):
+                            if currentV1.id == currentV2.id:
+                                foundDistinguishedVertex = True
+                                distinguishedVertex = currentV1
                                 break
 
-                            else:
-                                currentVertice = currentVertice.parent
+                            v2_path.append(currentV2.id)
+                            currentV2 = currentV2.parent
 
-                if root_degree > 2 and isTypeOneBlossomCheck1 and isTypeOneBlossomCheck2:
+                        if not foundDistinguishedVertex:
+                            v1_path.append(currentV1.id)
+
+                        currentV1 = currentV1.parent
+                
+                isTypeOneBlossomCheck = (len(v1_path) == 0 or cover_x[distinguishedVertex.id][v1_path[-1]] == 1) and (len(v2_path) == 0 or cover_x[distinguishedVertex.id][v2_path[-1]] == 1)
+
+                if root_degree > 2 and isTypeOneBlossomCheck:
                     #Aresta verificada agora
                     new_value = 0
                     
@@ -601,6 +632,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     #     cover_x[currentVertice.parent.id][currentVertice.id] = new_value
                     
                     #     currentVertice = currentVertice.parent
+                    original_tree_id = choosenDelta.edge.v1.tree
 
                     for v in forest.trees[choosenDelta.edge.v1.tree].vertices:
                         v.label = 'U'
@@ -616,25 +648,8 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                             
                             cover_x[v.id][v.parent.id] = new_value
                             cover_x[v.parent.id][v.id] = new_value
-                    
 
-                    for v in forest.trees[choosenDelta.edge.v2.tree].vertices:
-                        v.label = 'U'
-                        v.tree = -1
-                        
-                        if (not (v.parent is None)):
-                            new_value = 0
-                            
-                            if(cover_x[v.id][v.parent.id] == -1):
-                                new_value = 1
-                            elif(cover_x[v.id][v.parent.id] == 1):
-                                new_value = -1
-                            
-                            cover_x[v.id][v.parent.id] = new_value
-                            cover_x[v.parent.id][v.id] = new_value
-
-                    forest.removeTree(choosenDelta.edge.v1.tree)
-                    forest.removeTree(choosenDelta.edge.v2.tree)
+                    forest.removeTree(original_tree_id)
 
                     passo2(forest, cover_v, cover_x, cover, Bp, lambd)
                 else:
@@ -644,35 +659,38 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     v1_path = []
                     v2_path = []
 
-                    currentV1 = choosenDelta.v1
-                    currentV2 = choosenDelta.v2
+                    currentV1 = choosenDelta.edge.v1
+                    currentV2 = choosenDelta.edge.v2
                     
                     foundDistinguishedVertex = False
                     distinguishedVertex = None
 
                     #encontra circuito do blossom
-                    while(not (currentV1.parent is None)):
+                    while(not (currentV1 is None)):
                         if foundDistinguishedVertex:
                             break
 
                         if(not foundDistinguishedVertex):
-                            v1_path.append(currentV1.id)
                             v2_path = []
-                            currentV2 = choosenDelta.v2
-                            while(not (currentV2.parent is None)):
-                                v2_path.append(currentV2.id)
-
-                                if currentV1.parent.id == currentV2.parent.id:
+                            currentV2 = choosenDelta.edge.v2
+                            while(not (currentV2 is None)):
+                                if currentV1.id == currentV2.id:
                                     foundDistinguishedVertex = True
-                                    distinguishedVertex = currentV1.parent
+                                    distinguishedVertex = currentV1
                                     break
 
+                                v2_path.append(currentV2.id)
                                 currentV2 = currentV2.parent
-                            
+
+                            if not foundDistinguishedVertex:
+                                v1_path.append(currentV1.id)
+
                             currentV1 = currentV1.parent
 
-
-                    blossom_vertices_id = [].append(distinguishedVertex.id).extend(v1_path).extend(v2_path)
+                    blossom_vertices_id = []
+                    blossom_vertices_id.append(distinguishedVertex.id)
+                    blossom_vertices_id.extend(v1_path)
+                    blossom_vertices_id.extend(v2_path)
 
                     #Muda o rótulo de todos os vértices que compõem o blossom
                     for bv in blossom_vertices_id:
@@ -709,7 +727,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                                     break
                         else:
                             #Se o vértice i estiver no blossom
-                            for j in range(0, len(cover[i])):
+                            for j in range(i, len(cover[i])):
 
                                 #Verifica se o vértice j está no blossom, se sim, adiciona a aresta entre eles ao pseudo-vertice
                                 if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
@@ -727,8 +745,10 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
 
                     cover[len(cover) - 1].append(None)
                     cover_x[len(cover) - 1].append(0)
+                    cover_v.append(blossom_vertice)
 
                     Bp.append(blossom_vertice)
+                    passo3(forest, cover_v, cover_x, cover, Bp, lambd)
 
 def min_cover(adjacency_matrix):
     original_V = []
