@@ -273,9 +273,16 @@ def min_cover(adjacency_matrix):
                 if (cover_v[i].label == 'E' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'E'):
                     deltas[4].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
 
-                #TODO fazer verificação se i e j não estão no mesmo blossom
                 if(cover_v[i].label == 'E' and cover_v[j].label == 'E') and cover_v[i].tree == cover_v[j].tree:
-                    deltas[6].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
+                    notInSameBlossom = True
+
+                    for B in Bp:
+                        if B.blossomVerticesId.count(i) > 0 and B.blossomVerticesId.count(j) > 0:
+                            notInSameBlossom = False
+                            break
+                    
+                    if notInSameBlossom:
+                        deltas[6].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
             elif cover_x[i][j] == -1:
                 if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'O' and cover_v[j].label == 'O' and cover[i][j].alfa > 0:
                     deltas[3].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
@@ -283,9 +290,16 @@ def min_cover(adjacency_matrix):
                 if (cover_v[i].label == 'O' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'O') and cover[i][j].alfa > 0:
                     deltas[5].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
-                #TODO fazer verificação se i e j não estão no mesmo blossom
                 if(cover_v[i].label == 'O' and cover_v[j].label == 'O') and cover_v[i].tree == cover_v[j].tree:
-                    deltas[7].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
+                    notInSameBlossom = True
+
+                    for B in Bp:
+                        if B.blossomVerticesId.count(i) > 0 and B.blossomVerticesId.count(j) > 0:
+                            notInSameBlossom = False
+                            break
+                    
+                    if notInSameBlossom:
+                        deltas[7].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
 
     for i in range(1, len(deltas)):
         if (i != 4 and i != 5):
@@ -304,20 +318,86 @@ def min_cover(adjacency_matrix):
     if choosenDelta is None:
         print("Found cover!")
         print(cover)
+        print(cover_x)
     else:
         if (choosenDeltaIndex == 1):
-            blossom_tree = forest.trees[choosenDelta.blossom.tree]
-
-            for i in blossom_tree.vertices:
-                if(not (cover[i][choosenDelta.blossom.id] is None)):
-                    originalEdgeTuple = cover[i][choosenDelta.blossom.id]
-                    originalEdge = cover[originalEdgeTuple[0]][originalEdgeTuple[1]]
-
-                    novo_vertice = cover_v[originalEdgeTuple[1]]
+            def isTransmitter(i):
+                count = 0
+                for j in range(0, len(cover[i])):
+                    if ((not (cover[i][j] is None)) and cover_x[i][j] == 1):
+                        count += 1
                     
-                    if(novo_vertice )
+                        if count > 1:
+                            return True
 
+                return False
+                
+
+            def reconsctructTree(tree, v, lastCoverX):
+                for j in range(0, cover[v]):
+                    #EVEN TO ODD
+                    if(cover_x[i][j] == 1 and lastCoverX == -1):
+                        if(isTransmitter(j) or not cover_v[j].tree == -1):
+                            return
+                        else:
+                            tree.addToOdd(cover_v[j])
+                            reconsctructTree(tree, j, 1)
+                    #ODD TO EVEN
+                    elif(cover_x[i][j] == -1 and lastCoverX == 1):
+                        if(cover_v[j].tree == -1):
+                            tree.addToEven(cover_v[j])
+                            reconsctructTree(tree, j, -1)
+
+
+            blossom_tree = forest.trees[choosenDelta.blossom.tree]
+            for vertice in blossom_tree.vertices:
+                vertice.tree = -1
+                vertice.label = 'U'
             
+            blossom_tree.vertices = []
+
+            choosenDelta.blossom.tree = -1
+            choosenDelta.blossom.label = 'U'
+            
+            reconsctructTree(blossom_tree, blossom_tree.root.id, -1)
+            # new_alternating_tree = Tree(choosenDelta.blossom.tree)
+            # new_alternating_tree.setRoot(blossom_tree.root)
+
+            # choosenDelta.blossom.tree = -1
+            # choosenDelta.blossom.parent = None
+            # choosenDelta.blossom.blossomEdges = []
+            # choosenDelta.blossom.blossomVerticesId = []
+            # choosenDelta.blossom.label = 'U'
+
+            # def crescerArvoreAlternada():
+            #     blossom_tree = forest.trees[choosenDelta.blossom.tree]
+            #     choosenDelta.blossom.tree = -1
+            #     choosenDelta.blossom.parent = None
+            #     choosenDelta.blossom.blossomEdges = []
+            #     choosenDelta.blossom.blossomVerticesId = []
+            #     choosenDelta.blossom.label = 'U'
+
+            # edges = len(choosenDelta.blossom.blossomEdges)
+
+            # for i in blossom_tree.vertices:
+            #     if(not (cover[i][choosenDelta.blossom.id] is None)):
+            #         originalEdgeTuple = cover[i][choosenDelta.blossom.id]
+            #         originalEdge = cover[originalEdgeTuple[0]][originalEdgeTuple[1]]
+
+            #         novo_vertice = cover_v[originalEdgeTuple[1]]
+            #         continuar = True
+            #         while continuar:
+            #             if(cover_v[originalEdgeTuple[0]].label == 'O'):
+            #                 blossom_tree.addToEven(novo_vertice)
+            #             elif(cover_v[originalEdgeTuple[0]].label == 'E'):
+            #                 blossom_tree.addToOdd(novo_vertice)
+
+            #         previousEdgeInCover = cover_x[originalEdgeTuple[0]][originalEdgeTuple[1]] == 1
+            #         previrousEdgeLabel = cover_v[originalEdgeTuple[0]].label
+
+            # for edge in choosenDelta.blossom.blossomEdges:
+                
+
                 # if (choosenDelta.blossom.blossomVerticesId.count() > 1):
 
         if (choosenDeltaIndex == 2 or choosenDeltaIndex == 3):
