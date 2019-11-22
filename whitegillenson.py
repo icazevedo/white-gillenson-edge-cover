@@ -42,6 +42,8 @@ class Forest:
         for v in self.trees[tree_id].vertices:
             v.label = 'U'
             v.tree = -1
+            v.parent = None
+            v.children = []
 
         self.trees.pop(tree_id)
 
@@ -238,42 +240,45 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                 deltas[1].compareAndSetDelta1(B.Zp, B)
 
         for i in range(0, len(cover)):
+            ii = i
             for j in range(0, len(cover[i])):
+                jj = j
+                
                 # SE A ARESTA ESTIVER NA COBERTURA
-                if (not(cover[i][j] is None)) and cover_x[i][j] == 1:
-                    if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'E' and cover_v[j].label == 'E':
-                        deltas[2].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
+                if (not(cover[ii][jj] is None)) and cover_x[ii][jj] == 1:
+                    if cover_v[ii].tree != cover_v[jj].tree and cover_v[ii].label == 'E' and cover_v[jj].label == 'E':
+                        deltas[2].compareAndSetDelta(cover[ii][jj].delta2And4and6(), cover[ii][jj])
 
-                    if (cover_v[i].label == 'E' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'E'):
-                        deltas[4].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
+                    if (cover_v[ii].label == 'E' and cover_v[jj].label == 'U') or (cover_v[ii].label == 'U' and cover_v[jj].label == 'E'):
+                        deltas[4].compareAndSetDelta(cover[ii][jj].delta2And4and6(), cover[ii][jj])
 
-                    if(cover_v[i].label == 'E' and cover_v[j].label == 'E') and cover_v[i].tree == cover_v[j].tree:
+                    if(cover_v[ii].label == 'E' and cover_v[jj].label == 'E') and cover_v[ii].tree == cover_v[jj].tree:
                         notInSameBlossom = True
 
                         for B in Bp:
-                            if B.blossomVerticesId.count(i) > 0 and B.blossomVerticesId.count(j) > 0:
+                            if B.blossomVerticesId.count(ii) > 0 and B.blossomVerticesId.count(jj) > 0:
                                 notInSameBlossom = False
                                 break
                         
                         if notInSameBlossom:
-                            deltas[6].compareAndSetDelta(cover[i][j].delta2And4and6(), cover[i][j])
-                elif (not(cover[i][j] is None)) and cover_x[i][j] == -1:
-                    if cover_v[i].tree != cover_v[j].tree and cover_v[i].label == 'O' and cover_v[j].label == 'O' and cover[i][j].alfa > 0:
-                        deltas[3].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
+                            deltas[6].compareAndSetDelta(cover[ii][jj].delta2And4and6(), cover[ii][jj])
+                elif (not(cover[ii][jj] is None)) and cover_x[ii][jj] == -1:      
+                    if cover_v[ii].tree != cover_v[jj].tree and cover_v[ii].label == 'O' and cover_v[jj].label == 'O':
+                        deltas[3].compareAndSetDelta(cover[ii][jj].alfa, cover[ii][jj])
 
-                    if (cover_v[i].label == 'O' and cover_v[j].label == 'U') or (cover_v[i].label == 'U' and cover_v[j].label == 'O') and cover[i][j].alfa > 0:
-                        deltas[5].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
+                    if (cover_v[ii].label == 'O' and cover_v[jj].label == 'U') or (cover_v[ii].label == 'U' and cover_v[jj].label == 'O'):
+                        deltas[5].compareAndSetDelta(cover[ii][jj].alfa, cover[ii][jj])
 
-                    if(cover_v[i].label == 'O' and cover_v[j].label == 'O') and cover_v[i].tree == cover_v[j].tree:
+                    if(cover_v[ii].label == 'O' and cover_v[jj].label == 'O') and cover_v[ii].tree == cover_v[jj].tree:
                         notInSameBlossom = True
 
                         for B in Bp:
-                            if B.blossomVerticesId.count(i) > 0 and B.blossomVerticesId.count(j) > 0:
+                            if B.blossomVerticesId.count(ii) > 0 and B.blossomVerticesId.count(jj) > 0:
                                 notInSameBlossom = False
                                 break
                         
                         if notInSameBlossom:
-                            deltas[7].compareAndSetDelta(cover[i][j].alfa, cover[i][j])
+                            deltas[7].compareAndSetDelta(cover[ii][jj].alfa, cover[ii][jj])
 
         for i in range(1, len(deltas)):
             if (i != 4 and i != 5) and (not (deltas[i].value is None)):
@@ -295,19 +300,17 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
             print(cover_x)
         else:
             #AJUSTANDO VALORES
-
+            for blossom in Bp:
+                if(blossom.label == 'E'):
+                    blossom.Zp = blossom.Zp - (2 * choosenDelta.value)
+                elif(blossom.label == 'O'):
+                    blossom.Zp = blossom.Zp + (2 * choosenDelta.value)
+           
             for v in cover_v:
                 if(v.label == 'E'):
                     v.weight = v.weight - choosenDelta.value
-
-                    if(v.isBlossom()):
-                        v.Zp = v.Zp - (2 * choosenDelta.value)
                 elif(v.label == 'O'):
                     v.weight = v.weight + choosenDelta.value
-
-                    if(v.isBlossom()):
-                        v.Zp = v.Zp + (2 * choosenDelta.value)
-            
 
             for i in range(0, len(cover)):
                 for j in range(0, len(cover[i])):
@@ -346,7 +349,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     
 
                 def reconsctructTree(tree, v, lastCoverX):
-                    for j in range(0, cover[v]):
+                    for j in range(0, len(cover[v])):
                         #EVEN TO ODD
                         if(cover_x[i][j] == 1 and lastCoverX == -1):
                             if(isTransmitter(j) or not cover_v[j].tree == -1):
@@ -457,23 +460,28 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                 
                 #     currentVertice = currentVertice.parent
                 v1_original_tree = choosenDelta.edge.v1.tree
-                v2_original_tree = choosenDelta.edge.v2.tree
 
                 for v in forest.trees[choosenDelta.edge.v1.tree].vertices:
                     v.label = 'U'
                     v.tree = -1
 
-                    if (not (v.parent is None)):
+                    for child in v.children:
                         new_value = 0
                         
-                        if(cover_x[v.id][v.parent.id] == -1):
+                        if(cover_x[v.id][child.id] == -1):
                             new_value = 1
-                        elif(cover_x[v.id][v.parent.id] == 1):
+                        elif(cover_x[v.id][child.id] == 1):
                             new_value = -1
                         
-                        cover_x[v.id][v.parent.id] = new_value
-                        cover_x[v.parent.id][v.id] = new_value
-                
+                        cover_x[v.id][child.id] = new_value
+                        cover_x[child.id][v.id] = new_value
+
+                    v.parent = None
+                    v.children = []
+
+                forest.removeTree(v1_original_tree)
+
+                v2_original_tree = choosenDelta.edge.v2.tree
 
                 for v in forest.trees[choosenDelta.edge.v2.tree].vertices:
                     v.label = 'U'
@@ -490,7 +498,8 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                         cover_x[v.id][v.parent.id] = new_value
                         cover_x[v.parent.id][v.id] = new_value
 
-                forest.removeTree(v1_original_tree)
+                    v.parent = None
+
                 forest.removeTree(v2_original_tree)
 
                 passo2(forest, cover_v, cover_x, cover, Bp, lambd)
@@ -502,7 +511,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     forest.trees[choosenDelta.edge.v1.tree].addToOdd(choosenDelta.edge.v2)
 
                     if(choosenDelta.edge.v2.isBlossom()):
-                        for i in choosenDelta.edge.v2.blossomVerticesIds:
+                        for i in choosenDelta.edge.v2.blossomVerticesId:
                             cover_v[i].label = 'O'
 
                 #v2 é que está na árvore
@@ -512,7 +521,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     forest.trees[choosenDelta.edge.v2.tree].addToOdd(choosenDelta.edge.v1)
 
                     if(choosenDelta.edge.v1.isBlossom()):
-                        for i in choosenDelta.edge.v1.blossomVerticesIds:
+                        for i in choosenDelta.edge.v1.blossomVerticesId:
                             cover_v[i].label = 'O'
                 
 
@@ -528,7 +537,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     forest.trees[choosenDelta.edge.v1.tree].addToEven(choosenDelta.edge.v2)
 
                     if(choosenDelta.edge.v2.isBlossom()):
-                        for i in choosenDelta.edge.v2.blossomVerticesIds:
+                        for i in choosenDelta.edge.v2.blossomVerticesId:
                             cover_v[i].label = 'E'
                 #v2 está na arvore
                 else:
@@ -537,7 +546,7 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                     forest.trees[choosenDelta.edge.v2.tree].addToEven(choosenDelta.edge.v1)
 
                     if(choosenDelta.edge.v1.isBlossom()):
-                        for i in choosenDelta.edge.v1.blossomVerticesIds:
+                        for i in choosenDelta.edge.v1.blossomVerticesId:
                             cover_v[i].label = 'E'
 
                 cover_x[choosenDelta.edge.v1.id][choosenDelta.edge.v2.id] = -1
@@ -648,6 +657,8 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                             
                             cover_x[v.id][v.parent.id] = new_value
                             cover_x[v.parent.id][v.id] = new_value
+                        
+                        v.parent = None
 
                     forest.removeTree(original_tree_id)
 
@@ -655,6 +666,10 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
                 else:
                     #Instanciação do pseudo-vertice que representa o blossom
                     blossom_vertice = Vertice(len(cover[i]))
+                    blossom_vertice.weight = lambd/2
+                    blossom_vertice.label = 'O'
+
+                    choosenDelta.edge.v1.children.append(choosenDelta.edge.v2)
 
                     v1_path = []
                     v2_path = []
@@ -698,54 +713,56 @@ def passo3(forest, cover_v, cover_x, cover, Bp, lambd):
 
                     blossom_vertice.blossomVerticesId = blossom_vertices_id
 
-                    #Cria novo vertice na cobertura (matriz de adjacencia)
-                    cover.append([])
-                    cover_x.append([])
+                    # #Cria novo vertice na cobertura (matriz de adjacencia)
+                    # cover.append([])
+                    # cover_x.append([])
                     
-                    for i in range(0, len(cover) - 1):
-                        #Variavel que indica se uma relação do vertice i foi encontrada com algum vértice j que está no blossom
-                        found = False
+                    # for i in range(0, len(cover) - 1):
+                    #     #Variavel que indica se uma relação do vertice i foi encontrada com algum vértice j que está no blossom
+                    #     found = False
 
-                        #Se o vertice não está no blossom
-                        if blossom_vertices_id.count(i) == 0:
-                            for j in range(0, len(cover[i])):
-                                #Considera onde tem aresta e se o j está no blossom - ou seja, é uma aresta que se conecta ao pseudo-vertice
-                                if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
-                                    new_blossom_relation = Edge(blossom_vertice, cover_v[i], cover[i][j].weight)
-                                    new_blossom_relation.originalEdge = (i, j)
+                    #     #Se o vertice não está no blossom
+                    #     if blossom_vertices_id.count(i) == 0:
+                    #         for j in range(0, len(cover[i])):
+                    #             #Considera onde tem aresta e se o j está no blossom - ou seja, é uma aresta que se conecta ao pseudo-vertice
+                    #             if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
+                    #                 new_blossom_relation = Edge(blossom_vertice, cover_v[i], cover[i][j].weight)
+                    #                 new_blossom_relation.originalEdge = (i, j)
 
-                                    #Define a relação do lado do pseudo-vertice
-                                    cover[len(cover) - 1].append(new_blossom_relation)
-                                    cover_x[len(cover) - 1].append(cover_x[i][j])
+                    #                 #Define a relação do lado do pseudo-vertice
+                    #                 cover[len(cover) - 1].append(new_blossom_relation)
+                    #                 cover_x[len(cover) - 1].append(cover_x[i][j])
 
-                                    #Define a relação do lado do vertice já existente
-                                    cover[i].append(new_blossom_relation)
-                                    cover_x[i].append(cover_x[i][j])
+                    #                 #Define a relação do lado do vertice já existente
+                    #                 cover[i].append(new_blossom_relation)
+                    #                 cover_x[i].append(cover_x[i][j])
 
-                                    #Encerra a execução para o vértice
-                                    found = True
-                                    break
-                        else:
-                            #Se o vértice i estiver no blossom
-                            for j in range(i, len(cover[i])):
+                    #                 #Encerra a execução para o vértice
+                    #                 found = True
+                    #                 break
+                    #     else:
+                    #         #Se o vértice i estiver no blossom
+                    #         for j in range(i, len(cover[i])):
 
-                                #Verifica se o vértice j está no blossom, se sim, adiciona a aresta entre eles ao pseudo-vertice
-                                if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
-                                    blossom_vertice.blossomEdges.append(cover[i][j])
+                    #             #Verifica se o vértice j está no blossom, se sim, adiciona a aresta entre eles ao pseudo-vertice
+                    #             if (not (cover[i][j] is None)) and blossom_vertices_id.count(j) > 0:
+                    #                 blossom_vertice.blossomEdges.append(cover[i][j])
                         
-                        #Se não foi encontrada uma aresta que conecta o vertice i ao blossom, é criada uma relação nula que representa a ausencia de relação
-                        if not found:
-                            #Criando relação nula do lado do pseudo-vertice
-                            cover[len(cover) - 1].append(None)
-                            cover_x[len(cover) - 1].append(0)
+                    #     #Se não foi encontrada uma aresta que conecta o vertice i ao blossom, é criada uma relação nula que representa a ausencia de relação
+                    #     if not found:
+                    #         #Criando relação nula do lado do pseudo-vertice
+                    #         cover[len(cover) - 1].append(None)
+                    #         cover_x[len(cover) - 1].append(0)
 
-                            #Criando relação nula do lado do vértice existente
-                            cover[i].append(None)
-                            cover_x[i].append(0)
+                    #         #Criando relação nula do lado do vértice existente
+                    #         cover[i].append(None)
+                    #         cover_x[i].append(0)
 
-                    cover[len(cover) - 1].append(None)
-                    cover_x[len(cover) - 1].append(0)
-                    cover_v.append(blossom_vertice)
+                    # cover[len(cover) - 1].append(None)
+                    # cover_x[len(cover) - 1].append(0)
+
+                    # forest.trees[choosenDelta.edge.v1.tree].addToOdd(blossom_vertice)
+                    # cover_v.append(blossom_vertice)
 
                     Bp.append(blossom_vertice)
                     passo3(forest, cover_v, cover_x, cover, Bp, lambd)
@@ -803,12 +820,16 @@ def min_cover(adjacency_matrix):
 
 
 ma = [
-    [0, 20, 0, 0, 10, 0],
-    [20, 0, 5, 0, 2, 0],
-    [0, 5, 0, 5, 0, 0],
-    [0, 0, 5, 0, 4, 2],
-    [10, 2, 0, 4, 0, 0],
-    [0, 0, 0, 2, 0, 0]
+    [0, 9, 0, 0, 0, 0, 0, 0, 0, 0],
+    [9, 0, 22, 0, 0, 0, 0, 0, 0, 0],
+    [0, 22, 0, 34, 0, 0, 0, 0, 0, 0],
+    [0, 0, 34, 0, 27, 25, 0, 0, 0, 0],
+    [0, 0, 0, 27, 0, 26, 0, 0, 0, 0],
+    [0, 0, 0, 25, 26, 0, 28, 0, 0, 0],
+    [0, 0, 0, 0, 0, 28, 0, 21, 0, 24],
+    [0, 0, 0, 0, 0, 0, 21, 0, 1, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 2],
+    [0, 0, 0, 0, 0, 0, 24, 0, 2, 0]
 ]
 
 min_cover(ma)
